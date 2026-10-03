@@ -395,7 +395,8 @@ function review(list){
     else if (new Date(s.nac.y, s.nac.m-1, s.nac.d) > new Date(c.y, c.m-1, c.d)) add("error", `La fecha de nacimiento ${fmtNac(s.nac)} es posterior a la fecha de corte.`);
     if (s.curp && s.curp !== "—"){
       if (!CURP_RE.test(s.curp)){
-        add("aviso", `La CURP ${s.curp} no tiene el formato oficial de 18 caracteres (puede ser provisional o de alumno extranjero). Sexo y edad se tomaron de las columnas del formato.`);
+        const extr = /EXTRANJERO/.test(noAcc(s.entidad)) || s.curp.slice(11,13) === "NE";
+        add("aviso", `La CURP ${s.curp} no tiene el formato oficial de 18 caracteres${extr ? `; ${s.sexo==="M"?"la alumna nació":"el alumno nació"} en el extranjero y probablemente tiene una CURP provisional` : " (puede ser provisional)"}. Sexo y edad se tomaron de las columnas del formato.`);
       } else {
         const cs = s.curp[10];
         if (s.sexo && cs !== "X" && cs !== s.sexo) add("error", `El sexo no coincide: la CURP indica ${cs==="H"?"HOMBRE":"MUJER"} y la columna dice ${s.sexo==="H"?"HOMBRE":"MUJER"}.`);
@@ -578,6 +579,8 @@ function buildWorkbook(schools){
     lug.push([`${sc.info.cct} · ${sc.info.escuela} · ${sc.info.turno}`]);
     lug.push(["LUGAR DE NACIMIENTO"].concat(...B.grades.map(g=>[g+"° H", g+"° M"]), ["TOTAL H","TOTAL M","TOTAL"]));
     for (const r of B.list) lug.push([estadoNombre(r.c).replace(/^el extranjero$/,"Extranjero")].concat(...B.grades.map(g=>{const v=r.by[g]||{H:0,M:0}; return [v.H, v.M];}), [r.H, r.M, r.H+r.M]));
+    const tH = B.list.reduce((a,r)=>a+r.H,0), tM = B.list.reduce((a,r)=>a+r.M,0);
+    lug.push(["TOTAL"].concat(...B.grades.map(g=>[B.list.reduce((a,r)=>a+((r.by[g]||{}).H||0),0), B.list.reduce((a,r)=>a+((r.by[g]||{}).M||0),0)]), [tH, tM, tH+tM]));
     lug.push([]);
     for (const r of B.list){ const n = r.H + r.M; lug.push([`${n} ${n===1?"alumno nacido":"alumnos nacidos"} en ${estadoNombre(r.c)} (${r.H} H, ${r.M} M)`]); }
     lug.push([]);
