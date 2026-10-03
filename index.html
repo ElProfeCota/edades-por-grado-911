@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Edades por Grado</title>
+<meta name="description" content="Edad cumplida al 1 de septiembre, hombres y mujeres por grado y grupo, a partir del Formato Único de Alumnos en PDF.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: una herramienta de una columna — encabezado, panel de carga + opciones, luego una tarjeta por escuela con la tabla estadística y el detalle por grupo. */
+:root{
+  --bg:#F4F6F2; --surface:#FFFFFF; --fg:#16211C; --muted:#56665E; --line:#D7DFD9;
+  --accent:#1E5C47; --accent-ink:#FFFFFF; --accent-soft:#E2EEE8;
+  --h:#2F6E8F; --h-soft:#E1EDF3; --m:#A0592B; --m-soft:#F6E9DF;
+  --warn:#8A5A00; --warn-soft:#FBF0D6; --bad:#A4342A; --bad-soft:#F8E3E0; --zero:#B9C4BE;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1613; --surface:#16201B; --fg:#E4ECE7; --muted:#9AAAA2; --line:#2A3832;
+  --accent:#6CC29E; --accent-ink:#0C1511; --accent-soft:#1C3229;
+  --h:#7DB9D8; --h-soft:#1A2B34; --m:#E2A177; --m-soft:#33241A;
+  --warn:#E8C26A; --warn-soft:#2E2715; --bad:#F08A7E; --bad-soft:#3A1E1A; --zero:#3C4C45; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1613; --surface:#16201B; --fg:#E4ECE7; --muted:#9AAAA2; --line:#2A3832;
+  --accent:#6CC29E; --accent-ink:#0C1511; --accent-soft:#1C3229;
+  --h:#7DB9D8; --h-soft:#1A2B34; --m:#E2A177; --m-soft:#33241A;
+  --warn:#E8C26A; --warn-soft:#2E2715; --bad:#F08A7E; --bad-soft:#3A1E1A; --zero:#3C4C45; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:flex;flex-direction:column;gap:24px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:700}
+h3{font-size:16px;font-weight:700}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.muted{color:var(--muted)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+header.top .lead{max-width:62ch;display:flex;flex-direction:column;gap:8px}
+.stamp{font-family:var(--f-mono);font-size:13px;border:1.5px solid var(--accent);color:var(--accent);border-radius:6px;padding:6px 10px;white-space:nowrap}
+
+.panel{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.panel{grid-template-columns:1fr}}
+.drop{border:2px dashed var(--line);border-radius:var(--r);background:var(--surface);padding:24px;display:flex;flex-direction:column;gap:12px;align-items:flex-start;justify-content:center;min-height:170px;transition:border-color .15s, background .15s;cursor:pointer}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop p{margin:0;max-width:52ch}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;cursor:pointer;font-weight:700}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.opts{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:700;font-size:14px}
+.field input[type=date]{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg);max-width:220px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{margin-top:3px;accent-color:var(--accent);width:16px;height:16px}
+.privacy{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin:0}
+
+.status{display:flex;flex-direction:column;gap:8px}
+.note{border-radius:8px;padding:10px 14px;font-size:14px;background:var(--warn-soft);color:var(--fg);border-left:4px solid var(--warn)}
+.note.ok{background:var(--accent-soft);border-left-color:var(--accent)}
+.note.bad{border-left-color:var(--bad)}
+.example-flag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn);border-radius:999px;padding:2px 10px}
+
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.toolbar .actions{display:flex;flex-wrap:wrap;gap:8px}
+
+.school{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:18px}
+.school-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:flex-start}
+.school-head .meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted)}
+.school-head .meta b{color:var(--fg);font-family:var(--f-mono);font-weight:600}
+.totals{display:flex;gap:10px;flex-wrap:wrap}
+.tot{display:flex;flex-direction:column;align-items:flex-start;padding:8px 14px;border-radius:8px;background:var(--bg);min-width:84px}
+.tot span{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.tot strong{font-family:var(--f-mono);font-size:22px;font-variant-numeric:tabular-nums}
+.tot.h strong{color:var(--h)} .tot.m strong{color:var(--m)}
+
+.tablebox{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+thead th{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--bg);position:sticky;top:0}
+td.num{font-family:var(--f-mono);font-size:14px}
+td.zero{color:var(--zero)}
+td.grp{font-family:var(--f-display);font-weight:700;font-size:17px;text-align:left;vertical-align:middle;border-right:1px solid var(--line)}
+td.sx{font-weight:700;font-size:13px;text-align:left}
+tr.rh td.sx{color:var(--h)} tr.rm td.sx{color:var(--m)}
+tr.rs td{background:var(--bg);font-weight:700}
+tr.rs td.num{font-weight:600}
+td.total{font-weight:700;border-left:1px solid var(--line)}
+tr.grand td{background:var(--accent-soft);font-weight:700;border-bottom:none}
+tr.grand-first td{border-top:2px solid var(--accent)}
+tr.sep td{border-bottom:2px solid var(--line)}
+
+details.group{border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+details.group summary{cursor:pointer;padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-weight:700;list-style:none}
+details.group summary::-webkit-details-marker{display:none}
+details.group summary::before{content:"▸";color:var(--accent);transition:transform .15s}
+details.group[open] summary::before{transform:rotate(90deg)}
+details.group summary .chip{font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px}
+.chip.h{background:var(--h-soft);color:var(--h)} .chip.m{background:var(--m-soft);color:var(--m)} .chip.x{background:var(--warn-soft);color:var(--warn)}
+.chip.e{background:var(--bad-soft);color:var(--bad)} .chip.n{background:var(--bg);color:var(--muted)}
+.chip{font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.list tr.flag-e td:first-child{box-shadow:inset 4px 0 0 var(--bad)}
+.list tr.flag-x td:first-child{box-shadow:inset 4px 0 0 var(--warn)}
+
+.review{border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.review.ok{border-color:var(--accent);background:var(--accent-soft)}
+.review.ok p{margin:0;font-size:14px}
+.review-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:13px;font-weight:700;border-radius:999px;padding:3px 10px}
+.pill.e{background:var(--bad);color:var(--surface)} .pill.x{background:var(--warn);color:var(--surface)}
+.issues{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto}
+.issues li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:2px 12px;background:var(--surface);border-radius:6px;padding:8px 12px;border-left:4px solid var(--warn);font-size:14px}
+.issues li.e{border-left-color:var(--bad)}
+.issues .lvl{grid-row:span 2;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--warn);padding-top:2px}
+.issues li.e .lvl{color:var(--bad)}
+.issues .who{min-width:0;overflow-wrap:anywhere}
+.issues .msg{min-width:0;color:var(--muted)}
+@media (max-width:520px){.issues li{grid-template-columns:1fr}.issues .lvl{grid-row:auto}}
+.only-touch{display:none}
+@media (hover:none) and (pointer:coarse){.only-touch{display:inline}.only-mouse{display:none}.drop{min-height:0}}
+@media (max-width:520px){.school{padding:14px}.tot{min-width:0;flex:1}.wrap{padding-inline:16px}th,td{padding:6px 8px}td.grp{font-size:15px}}
+details.group .tablebox{margin:0 12px 12px}
+.list td{text-align:left;font-size:14px}
+.list td.c{text-align:center}
+.list tr.out td{color:var(--muted);text-decoration:line-through}
+.mono{font-family:var(--f-mono);font-size:13px}
+.groups{display:flex;flex-direction:column;gap:8px}
+
+footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:16px}
+footer p{margin:0;max-width:80ch}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;font-weight:700;z-index:10}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lead">
+      <span class="eyebrow">El Profe Cota · Herramienta para escuelas primarias</span>
+      <h1>Edades por grado</h1>
+      <p class="muted" style="margin:0">Sube el <b>Formato Único de Alumnos</b> en PDF de cada grupo. La página cuenta hombres y mujeres por edad cumplida a la fecha de corte, grupo por grupo, y te da el concentrado de la escuela.</p>
+    </div>
+    <div class="stamp" id="stamp">Corte: 1 sep 2026</div>
+  </header>
+
+  <section class="panel" aria-label="Cargar archivos">
+    <label class="drop" id="drop" for="file">
+      <span class="eyebrow">Paso 1</span>
+      <h2><span class="only-mouse">Arrastra aquí los PDF</span><span class="only-touch">Toca para elegir los PDF</span></h2>
+      <p class="muted">Puedes subir varios a la vez: un PDF por grupo, uno combinado con toda la escuela o los de varias escuelas de la zona.</p>
+      <span class="btn primary">Elegir archivos PDF</span>
+      <input class="sr" type="file" id="file" accept="application/pdf,.pdf" multiple>
+    </label>
+    <div class="opts">
+      <span class="eyebrow">Paso 2 · Opciones</span>
+      <div class="field">
+        <label for="corte">Fecha de corte</label>
+        <input type="date" id="corte" value="2026-09-01">
+        <span class="muted" style="font-size:13px">La edad se calcula en años cumplidos a esta fecha.</span>
+      </div>
+      <label class="check"><input type="checkbox" id="soloInscritos" checked> <span>Contar solo alumnos inscritos (excluye los que aparecen con estatus de BAJA)</span></label>
+      <label class="check"><input type="checkbox" id="ocultarVacias"> <span>Ocultar edades sin alumnos (tabla más angosta, útil en celular; el Excel siempre trae todas)</span></label>
+      <p class="privacy">Los PDF se leen dentro de tu navegador. Ningún nombre ni CURP se envía a internet.</p>
+    </div>
+  </section>
+
+  <section class="status" id="status" aria-live="polite"></section>
+
+  <section id="results" style="display:flex;flex-direction:column;gap:20px"></section>
+
+  <footer>
+    <p>Sexo y fecha de nacimiento se toman de las columnas del formato. Si falta alguno, se obtiene de la CURP (posición 11 para el sexo; posiciones 5 a 10 para la fecha).</p>
+    <p>La revisión compara la CURP contra las columnas de sexo, fecha y entidad de nacimiento, valida el dígito verificador, detecta CURP repetidas en dos grupos y edades fuera de lo esperado para el grado (al 1 de septiembre, en 1° lo normal es 5 o 6 años; en 2°, 6 o 7; y así sucesivamente).</p>
+    <p>Revisa siempre el detalle de cada grupo antes de capturar la estadística oficial.</p>
+  </footer>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+"use strict";
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const AGE_COLS = [{k:"lt6",label:"Menos de 6"}].concat([6,7,8,9,10,11,12,13,14,15].map(a=>({k:String(a),label:a+" años"}))).concat([{k:"gt15",label:"16 o más"}]);
+const MESES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+
+let students = [];        // {key, cct, escuela, turno, zona, ciclo, grado, grupo, no, nombre, curp, sexo, nac:{y,m,d}, estatus, file}
+let isExample = true;
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- edad ---------- */
+function corteDate(){
+  const v = $("#corte").value || "2026-09-01";
+  const [y,m,d] = v.split("-").map(Number); return {y,m,d};
+}
+function edad(nac, c){
+  if(!nac) return null;
+  let a = c.y - nac.y;
+  if (c.m < nac.m || (c.m === nac.m && c.d < nac.d)) a--;
+  return a;
+}
+function ageKey(a){ if(a==null) return null; if(a<6) return "lt6"; if(a>15) return "gt15"; return String(a); }
+function fmtNac(n){ return n ? String(n.d).padStart(2,"0")+"/"+String(n.m).padStart(2,"0")+"/"+n.y : "—"; }
+function fromCurp(curp){
+  const m = /^[A-Z]{4}(\d{2})(\d{2})(\d{2})([HMX])/.exec(curp||"");
+  if(!m) return {};
+  const yy = +m[1], mm = +m[2], dd = +m[3];
+  if (mm<1||mm>12||dd<1||dd>31) return {sexo: m[4]==="H"?"H":m[4]==="M"?"M":null};
+  const now = new Date().getFullYear() % 100;
+  const y = (yy > now ? 1900 : 2000) + yy;
+  return {nac:{y,m:mm,d:dd}, sexo: m[4]==="H"?"H":m[4]==="M"?"M":null};
+}
+
+/* ---------- lectura de PDF ---------- */
+function pageLines(items){
+  const rows = [];
+  for (const it of items){
+    if (!it.str || !it.str.trim()) continue;
+    const x = it.transform[4], y = it.transform[5];
+    let row = rows.find(r => Math.abs(r.y - y) < 3);
+    if (!row){ row = {y, parts:[]}; rows.push(row); }
+    row.parts.push({x, s: it.str});
+  }
+  rows.sort((a,b)=>b.y-a.y);
+  return rows.map(r => r.parts.sort((a,b)=>a.x-b.x).map(p=>p.s.trim()).join(" ").replace(/\s+/g," ").trim());
+}
+const ROW_RE = /^(\d{1,3})\s+(\d{6,14})\s+(\S{10,20})\s+(.+?)\s+(HOMBRE|MUJER)\s+(\d{2})\/(\d{2})\/(\d{4})(.*)$/;
+const ROW_LOOSE = /^(\d{1,3})\s+(\d{6,14})\s+(\S{10,20})\s+(.+)$/;
+
+function parseHeader(text, prev){
+  const g = (re) => { const m = re.exec(text); return m ? m[1].trim() : null; };
+  return {
+    cct: g(/CLAVE ESCUELA\s*:\s*([0-9]{2}[A-Z]{3}[0-9]{4}[A-Z])/) || prev.cct || "SIN CCT",
+    escuela: g(/NOMBRE ESCUELA\s*:\s*(.+?)\s+TURNO\s*:/) || prev.escuela || "",
+    turno: g(/TURNO\s*:\s*([A-ZÁÉÍÓÚÑ]+)/) || prev.turno || "",
+    zona: g(/ZONA\s*:\s*(\d+)/) || prev.zona || "",
+    ciclo: g(/CICLO ESCOLAR\s*:\s*(\d{4}\s*-\s*\d{4})/) || prev.ciclo || "",
+    grado: g(/GRADO\s*:\s*(\d)/) || null,
+    grupo: g(/GRUPO\s*:\s*([A-Z0-9]{1,3})\b/) || null
+  };
+}
+
+async function readPdf(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+  const out = []; const issues = [];
+  let prev = {}; let textChars = 0;
+  for (let p = 1; p <= pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    const lines = pageLines(tc.items);
+    const full = lines.join("\n");
+    textChars += full.length;
+    const h = parseHeader(full, prev);
+    if (!h.grado) h.grado = prev.grado; if (!h.grupo) h.grupo = prev.grupo;
+    prev = h;
+    let found = 0;
+    for (const line of lines){
+      const m = ROW_RE.exec(line);
+      if (m){
+        found++;
+        const tail = m[9] || "";
+        const alta = /(\d{2}\/\d{2}\/\d{4})\s+(.*)$/.exec(tail);
+        const estatus = alta ? alta[2].trim() : "";
+        let nac = {y:+m[8], m:+m[7], d:+m[6]};
+        let sexo = m[5]==="HOMBRE" ? "H" : "M";
+        const s = mk(h, file.name, +m[1], m[4], m[3], sexo, nac, estatus);
+        s.entidad = tail.trim().split(/\s+/)[0] || "";
+        out.push(s);
+      } else if (ROW_LOOSE.test(line)){
+        const lm = ROW_LOOSE.exec(line);
+        const c = fromCurp(lm[3]);
+        if (c.nac && c.sexo){
+          found++;
+          out.push(mk(h, file.name, +lm[1], lm[4].replace(/\s+(SINALOA|EXTRANJERO).*$/,""), lm[3], c.sexo, c.nac, /BAJA\s*$/.test(line) ? "BAJA" : ""));
+        } else {
+          issues.push(`${file.name}, página ${p}: no se pudo leer el renglón ${lm[1]} (${lm[4].slice(0,40)}…). Revísalo a mano.`);
+        }
+      }
+    }
+    if (!found && /CURP/.test(full)) issues.push(`${file.name}, página ${p}: no se encontraron alumnos en esta página.`);
+  }
+  if (textChars < 50) issues.push(`${file.name}: parece un PDF escaneado (imagen). Usa el PDF original descargado de la plataforma, que trae el texto.`);
+  return {students: out, issues, pages: pdf.numPages};
+}
+function mk(h, file, no, nombre, curp, sexo, nac, estatus){
+  return {cct:h.cct, escuela:h.escuela, turno:h.turno, zona:h.zona, ciclo:h.ciclo,
+    grado: h.grado ? +h.grado : 0, grupo: h.grupo || "?", no, nombre: nombre.trim(), curp, sexo, nac, estatus, file,
+    key: (curp && curp.length>=16 ? curp : nombre+"|"+fmtNac(nac)) + "|" + h.cct + "|" + (h.grado||0) + "|" + (h.grupo||"?")};
+}
+
+/* ---------- revisión de inconsistencias ---------- */
+const CURP_RE = /^[A-Z]{4}\d{6}[HMX][A-Z]{2}[B-DF-HJ-NP-TV-ZÑ]{3}[A-Z0-9]\d$/;
+const DV_CHARS = "0123456789ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+function curpDV(c){ let s = 0; for (let i = 0; i < 17; i++) s += DV_CHARS.indexOf(c[i]) * (18 - i); return String((10 - s % 10) % 10); }
+// Primera palabra de la columna ENTIDAD NACIMIENTO → claves válidas en la CURP (posiciones 12-13)
+const ENT = {AGUASCALIENTES:["AS"],BAJA:["BC","BS"],CAMPECHE:["CC"],COAHUILA:["CL"],COLIMA:["CM"],CHIAPAS:["CS"],CHIHUAHUA:["CH"],
+  DISTRITO:["DF"],CIUDAD:["DF"],DURANGO:["DG"],GUANAJUATO:["GT"],GUERRERO:["GR"],HIDALGO:["HG"],JALISCO:["JC"],MEXICO:["MC"],ESTADO:["MC"],
+  MICHOACAN:["MN"],MORELOS:["MS"],NAYARIT:["NT"],NUEVO:["NL"],OAXACA:["OC"],PUEBLA:["PL"],QUERETARO:["QT"],QUINTANA:["QR"],SAN:["SP"],
+  SINALOA:["SL"],SONORA:["SR"],TABASCO:["TC"],TAMAULIPAS:["TS"],TLAXCALA:["TL"],VERACRUZ:["VZ"],YUCATAN:["YN"],ZACATECAS:["ZS"],EXTRANJERO:["NE"]};
+const noAcc = s => String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase();
+function validDate(n){ if(!n) return false; const d = new Date(n.y, n.m-1, n.d); return d.getFullYear()===n.y && d.getMonth()===n.m-1 && d.getDate()===n.d; }
+
+function review(list){
+  const c = corteDate();
+  const byCurp = new Map();
+  for (const s of list){
+    s.issues = [];
+    if (s.curp && s.curp !== "—"){ if (!byCurp.has(s.curp)) byCurp.set(s.curp, []); byCurp.get(s.curp).push(s); }
+  }
+  for (const s of list){
+    const add = (lvl, msg) => s.issues.push({lvl, msg});
+    if (!s.sexo) add("error", "No se pudo determinar el sexo.");
+    if (!s.nac) add("error", "No se pudo determinar la fecha de nacimiento.");
+    else if (!validDate(s.nac)) add("error", `La fecha de nacimiento ${fmtNac(s.nac)} no existe.`);
+    else if (new Date(s.nac.y, s.nac.m-1, s.nac.d) > new Date(c.y, c.m-1, c.d)) add("error", `La fecha de nacimiento ${fmtNac(s.nac)} es posterior a la fecha de corte.`);
+    if (s.curp && s.curp !== "—"){
+      if (!CURP_RE.test(s.curp)){
+        add("aviso", `La CURP ${s.curp} no tiene el formato oficial de 18 caracteres (puede ser provisional o de alumno extranjero). Sexo y edad se tomaron de las columnas del formato.`);
+      } else {
+        const cs = s.curp[10];
+        if (s.sexo && cs !== "X" && cs !== s.sexo) add("error", `El sexo no coincide: la CURP indica ${cs==="H"?"HOMBRE":"MUJER"} y la columna dice ${s.sexo==="H"?"HOMBRE":"MUJER"}.`);
+        const cd = fromCurp(s.curp).nac;
+        if (s.nac && cd && (cd.y!==s.nac.y || cd.m!==s.nac.m || cd.d!==s.nac.d)) add("error", `La fecha de nacimiento no coincide: la CURP indica ${fmtNac(cd)} y la columna dice ${fmtNac(s.nac)}.`);
+        if (curpDV(s.curp) !== s.curp[17]) add("error", `El dígito verificador de la CURP no es válido. Probablemente tiene un error de captura.`);
+        const ent = ENT[noAcc(s.entidad)];
+        if (ent && !ent.includes(s.curp.slice(11,13))) add("error", `La entidad de nacimiento no coincide: la CURP trae la clave ${s.curp.slice(11,13)} y la columna dice ${s.entidad}.`);
+      }
+      const dups = byCurp.get(s.curp) || [];
+      if (dups.length > 1){
+        const otros = dups.filter(o => o !== s).map(o => `${o.grado}° ${o.grupo}` + (o.cct !== s.cct ? ` de ${o.cct}` : ""));
+        add("error", `La misma CURP aparece también en ${otros.join(", ")}.`);
+      }
+    }
+    if (s.grado >= 1 && s.grado <= 6 && s.nac && validDate(s.nac)){
+      const a = edad(s.nac, c), lo = 4 + s.grado, hi = 5 + s.grado;
+      if (a < lo) add("error", `Edad menor a la esperada: tiene ${a} años al corte y en ${s.grado}° lo normal es ${lo} o ${hi}.`);
+      else if (a === hi + 1) add("aviso", `Un año arriba de la edad típica: tiene ${a} años al corte y en ${s.grado}° lo normal es ${lo} o ${hi}.`);
+      else if (a > hi + 1) add("aviso", `Extraedad: tiene ${a} años al corte, ${a-hi} años arriba de la edad típica de ${s.grado}° (${lo} o ${hi}).`);
+    }
+  }
+}
+
+/* ---------- agregación ---------- */
+function counted(s){ return !$("#soloInscritos").checked || !/BAJA/i.test(s.estatus||""); }
+function emptyRow(){ const r = {}; AGE_COLS.forEach(c=>r[c.k]=0); r.total=0; return r; }
+function aggregate(list){
+  const c = corteDate();
+  const schools = new Map();
+  for (const s of list){
+    const sk = s.cct + "|" + s.turno;
+    if (!schools.has(sk)) schools.set(sk, {info:s, groups:new Map()});
+    const sc = schools.get(sk);
+    const gk = s.grado + "|" + s.grupo;
+    if (!sc.groups.has(gk)) sc.groups.set(gk, {grado:s.grado, grupo:s.grupo, list:[], H:emptyRow(), M:emptyRow()});
+    const g = sc.groups.get(gk);
+    s.edad = edad(s.nac, c);
+    g.list.push(s);
+    if (!counted(s) || !s.sexo) continue;
+    const k = ageKey(s.edad); if (!k) continue;
+    g[s.sexo][k]++; g[s.sexo].total++;
+  }
+  for (const sc of schools.values()){
+    sc.groupList = [...sc.groups.values()].sort((a,b)=>a.grado-b.grado || String(a.grupo).localeCompare(String(b.grupo)));
+    sc.groupList.forEach(g=>g.list.sort((a,b)=>a.no-b.no));
+    sc.H = emptyRow(); sc.M = emptyRow();
+    for (const g of sc.groupList) for (const sx of ["H","M"]) for (const k in g[sx]) sc[sx][k] += g[sx][k];
+  }
+  return [...schools.values()].sort((a,b)=>a.info.cct.localeCompare(b.info.cct));
+}
+const sum = (a,b) => { const r = {}; for (const k in a) r[k] = a[k] + b[k]; return r; };
+
+/* ---------- render ---------- */
+let COLS = AGE_COLS;
+function cells(row){
+  return COLS.map(c=>`<td class="num${row[c.k]?"":" zero"}">${row[c.k]}</td>`).join("") + `<td class="num total">${row.total}</td>`;
+}
+function issueChips(list){
+  const e = list.filter(s=>s.issues.some(i=>i.lvl==="error")).length;
+  const a = list.filter(s=>s.issues.length && !s.issues.some(i=>i.lvl==="error")).length;
+  return (e?`<span class="chip e">${e} con error</span>`:"") + (a?`<span class="chip x">${a} con aviso</span>`:"");
+}
+function reviewBlock(sc){
+  const rows = [];
+  for (const g of sc.groupList) for (const s of g.list) for (const i of s.issues) rows.push({g, s, i});
+  if (!rows.length) return `<div class="review ok"><h3>Revisión de datos</h3><p>Sin inconsistencias. Las CURP, sexos, fechas de nacimiento y edades concuerdan.</p></div>`;
+  rows.sort((a,b)=>(a.i.lvl===b.i.lvl?0:a.i.lvl==="error"?-1:1) || a.g.grado-b.g.grado || String(a.g.grupo).localeCompare(String(b.g.grupo)) || a.s.no-b.s.no);
+  const ne = rows.filter(r=>r.i.lvl==="error").length, na = rows.length - ne;
+  return `<div class="review"><div class="review-head"><h3>Revisión de datos</h3><div class="pills">${ne?`<span class="pill e">${ne} error${ne>1?"es":""}</span>`:""}${na?`<span class="pill x">${na} aviso${na>1?"s":""}</span>`:""}</div></div>
+    <p class="muted" style="margin:0;font-size:14px"><b>Errores:</b> datos que se contradicen y deben corregirse en la plataforma. <b>Avisos:</b> casos que conviene confirmar.</p>
+    <ul class="issues">${rows.map(r=>`<li class="${r.i.lvl==="error"?"e":"x"}"><span class="lvl">${r.i.lvl==="error"?"Error":"Aviso"}</span><span class="who"><b>${r.g.grado}° ${esc(r.g.grupo)} · No. ${r.s.no}</b> ${esc(r.s.nombre)}</span><span class="msg">${esc(r.i.msg)}</span></li>`).join("")}</ul></div>`;
+}
+function render(){
+  const res = $("#results");
+  if (!students.length){ res.innerHTML = ""; return; }
+  review(students);
+  const schools = aggregate(students);
+  const c = corteDate();
+  $("#stamp").textContent = `Corte: ${c.d} ${MESES[c.m-1]} ${c.y}`;
+  let html = `<div class="toolbar"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2>Resultados</h2>${isExample?'<span class="example-flag">Ejemplo con datos ficticios</span>':""}</div>
+    <div class="actions"><button class="btn" id="copyBtn" type="button">Copiar tabla</button><button class="btn primary" id="xlsBtn" type="button">Descargar Excel</button>${isExample?"":'<button class="btn" id="clearBtn" type="button">Limpiar</button>'}</div></div>`;
+  for (const sc of schools){
+    const i = sc.info, T = sum(sc.H, sc.M);
+    COLS = $("#ocultarVacias").checked ? AGE_COLS.filter(c => T[c.k] > 0) : AGE_COLS;
+    html += `<article class="school">
+      <div class="school-head">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <h2>${esc(i.escuela || "Escuela")}</h2>
+          <div class="meta"><span>CCT <b>${esc(i.cct)}</b></span>${i.turno?`<span>Turno <b>${esc(i.turno)}</b></span>`:""}${i.zona?`<span>Zona <b>${esc(i.zona)}</b></span>`:""}${i.ciclo?`<span>Ciclo <b>${esc(i.ciclo)}</b></span>`:""}</div>
+        </div>
+        <div class="totals"><div class="tot"><span>Alumnos</span><strong>${T.total}</strong></div><div class="tot h"><span>Hombres</span><strong>${sc.H.total}</strong></div><div class="tot m"><span>Mujeres</span><strong>${sc.M.total}</strong></div></div>
+      </div>
+      ${reviewBlock(sc)}
+      <div class="tablebox"><table>
+        <thead><tr><th style="text-align:left">Grupo</th><th style="text-align:left">Sexo</th>${COLS.map(c=>`<th>${c.label}</th>`).join("")}<th>Total</th></tr></thead><tbody>`;
+    for (const g of sc.groupList){
+      html += `<tr class="rh"><td class="grp" rowspan="3">${g.grado}° ${esc(g.grupo)}</td><td class="sx">Hombres</td>${cells(g.H)}</tr>
+        <tr class="rm"><td class="sx">Mujeres</td>${cells(g.M)}</tr>
+        <tr class="rs sep"><td class="sx">Subtotal</td>${cells(sum(g.H,g.M))}</tr>`;
+    }
+    html += `<tr class="grand grand-first rh"><td class="grp" rowspan="3">Escuela</td><td class="sx">Hombres</td>${cells(sc.H)}</tr>
+      <tr class="grand rm"><td class="sx">Mujeres</td>${cells(sc.M)}</tr>
+      <tr class="grand"><td class="sx">Total</td>${cells(T)}</tr></tbody></table></div>
+      <div class="groups"><h3>Detalle por grupo</h3>`;
+    for (const g of sc.groupList){
+      const excl = g.list.filter(s=>!counted(s)).length;
+      html += `<details class="group"><summary>${g.grado}° ${esc(g.grupo)} <span class="muted" style="font-weight:400">${g.list.length} alumnos en lista</span><span class="chip h">${g.H.total} H</span><span class="chip m">${g.M.total} M</span>${excl?`<span class="chip n">${excl} no contados</span>`:""}${issueChips(g.list)}</summary>
+        <div class="tablebox"><table class="list"><thead><tr><th>No.</th><th style="text-align:left">Nombre</th><th style="text-align:left">CURP</th><th>Sexo</th><th>Nacimiento</th><th>Edad</th><th style="text-align:left">Estatus</th><th style="text-align:left">Revisión</th></tr></thead><tbody>
+        ${g.list.map(s=>{const lv = s.issues.some(i=>i.lvl==="error") ? "e" : s.issues.length ? "x" : "";
+          return `<tr class="${counted(s)?"":"out"} ${lv?"flag-"+lv:""}"><td class="c mono">${s.no}</td><td>${esc(s.nombre)}</td><td class="mono">${esc(s.curp)}</td><td class="c">${s.sexo||"?"}</td><td class="c mono">${fmtNac(s.nac)}</td><td class="c mono"><b>${s.edad==null?"?":s.edad}</b></td><td>${esc(s.estatus||"")}</td><td>${lv?`<span class="chip ${lv}">${lv==="e"?"Error":"Aviso"}</span>`:'<span class="muted">OK</span>'}</td></tr>`;}).join("")}
+        </tbody></table></div></details>`;
+    }
+    html += `</div></article>`;
+  }
+  res.innerHTML = html;
+  $("#copyBtn").onclick = () => copyTable(schools);
+  $("#xlsBtn").onclick = () => exportXlsx(schools);
+  const cb = $("#clearBtn"); if (cb) cb.onclick = () => { students = []; isExample = false; $("#status").innerHTML = ""; $("#file").value = ""; render(); };
+}
+
+/* ---------- exportar ---------- */
+function concentradoRows(schools){
+  const head = ["CCT","Escuela","Turno","Grado","Grupo","Sexo"].concat(AGE_COLS.map(c=>c.label.toUpperCase()), ["TOTAL"]);
+  const rows = [head];
+  const line = (i, gr, gp, sx, r) => [i.cct, i.escuela, i.turno, gr, gp, sx].concat(AGE_COLS.map(c=>r[c.k]), [r.total]);
+  for (const sc of schools){
+    const i = sc.info;
+    for (const g of sc.groupList){
+      rows.push(line(i, g.grado+"°", g.grupo, "H", g.H));
+      rows.push(line(i, g.grado+"°", g.grupo, "M", g.M));
+      rows.push(line(i, g.grado+"°", g.grupo, "SUBTOTAL", sum(g.H,g.M)));
+    }
+    rows.push(line(i, "ESCUELA", "", "H", sc.H));
+    rows.push(line(i, "ESCUELA", "", "M", sc.M));
+    rows.push(line(i, "ESCUELA", "", "TOTAL", sum(sc.H,sc.M)));
+  }
+  return rows;
+}
+async function copyTable(schools){
+  const tsv = concentradoRows(schools).map(r=>r.join("\t")).join("\n");
+  try { await navigator.clipboard.writeText(tsv); toast("Tabla copiada. Pégala en Excel."); }
+  catch(e){
+    const ta = document.createElement("textarea"); ta.value = tsv; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast("Tabla copiada. Pégala en Excel."); } catch(_) { toast("No se pudo copiar. Usa Descargar Excel."); }
+    ta.remove();
+  }
+}
+function buildWorkbook(schools){
+  const c = corteDate();
+  const wb = XLSX.utils.book_new();
+  const conc = concentradoRows(schools);
+  conc.unshift([], ["Fecha de corte:", `${String(c.d).padStart(2,"0")}/${String(c.m).padStart(2,"0")}/${c.y}`]);
+  conc.unshift(["ESTADÍSTICA DE EDADES POR GRADO Y GRUPO"]);
+  const ws = XLSX.utils.aoa_to_sheet(conc);
+  ws["!cols"] = [{wch:12},{wch:28},{wch:11},{wch:9},{wch:7},{wch:10}].concat(AGE_COLS.map(()=>({wch:10})),[{wch:8}]);
+  XLSX.utils.book_append_sheet(wb, ws, "CONCENTRADO");
+  const multi = schools.length > 1; const used = new Set(["CONCENTRADO"]);
+  for (const sc of schools){
+    for (const g of sc.groupList){
+      let name = (multi ? sc.info.cct.slice(-5)+" " : "") + g.grado + "° " + g.grupo;
+      name = name.replace(/[\\\/\?\*\[\]:]/g,"").slice(0,31); let n = name, k = 2; while (used.has(n)) n = (name.slice(0,28)+" "+k++); used.add(n);
+      const rows = [["NO.","CURP","NOMBRE","SEXO","FECHA DE NACIMIENTO","EDAD AL CORTE","ESTATUS","CONTADO"]].concat(
+        g.list.map(s=>[s.no, s.curp, s.nombre, s.sexo, fmtNac(s.nac), s.edad, s.estatus||"", counted(s)?"SÍ":"NO"]));
+      const sh = XLSX.utils.aoa_to_sheet(rows);
+      sh["!cols"] = [{wch:5},{wch:20},{wch:40},{wch:6},{wch:12},{wch:8},{wch:12},{wch:9}];
+      XLSX.utils.book_append_sheet(wb, sh, n);
+    }
+  }
+  const inc = [["NIVEL","CCT","GRADO","GRUPO","NO.","NOMBRE","CURP","DETALLE"]];
+  for (const sc of schools) for (const g of sc.groupList) for (const s of g.list) for (const i of s.issues)
+    inc.push([i.lvl==="error"?"ERROR":"AVISO", sc.info.cct, g.grado+"°", g.grupo, s.no, s.nombre, s.curp, i.msg]);
+  if (inc.length === 1) inc.push(["", "", "", "", "", "Sin inconsistencias", "", ""]);
+  const wi = XLSX.utils.aoa_to_sheet(inc);
+  wi["!cols"] = [{wch:8},{wch:12},{wch:7},{wch:7},{wch:5},{wch:38},{wch:20},{wch:90}];
+  XLSX.utils.book_append_sheet(wb, wi, "INCONSISTENCIAS");
+  return wb;
+}
+async function exportXlsx(schools){
+  if (!window.XLSX){ toast("No se cargó el generador de Excel. Revisa tu conexión."); return; }
+  const wb = buildWorkbook(schools);
+  const c = corteDate();
+  const cct = schools.length === 1 ? schools[0].info.cct : "VARIAS_ESCUELAS";
+  const filename = `EDADES_${cct}_${c.y}-${String(c.m).padStart(2,"0")}-${String(c.d).padStart(2,"0")}.xlsx`;
+  const dl = await downloadsCap();
+  if (dl){
+    const data = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+    try { await dl.save({filename, data: new Blob([data])}); toast("Excel guardado."); }
+    catch(e){ if (e && e.code !== "declined") toast("No se pudo guardar el Excel en esta vista."); }
+  } else {
+    XLSX.writeFile(wb, filename);
+  }
+}
+let _dl;
+function downloadsCap(){
+  if (_dl !== undefined) return _dl;
+  if (!window.claude || typeof window.claude.use !== "function") return (_dl = Promise.resolve(null));
+  return (_dl = window.claude.use("downloads").catch(()=>null));
+}
+
+/* ---------- archivos ---------- */
+async function handleFiles(files){
+  const pdfs = [...files].filter(f => /\.pdf$/i.test(f.name) || f.type === "application/pdf");
+  if (!pdfs.length){ setStatus([{t:"bad", m:"Esos archivos no son PDF. Sube el Formato Único de Alumnos en PDF."}]); return; }
+  if (!window.pdfjsLib){ setStatus([{t:"bad", m:"No se cargó el lector de PDF. Revisa tu conexión a internet y recarga la página."}]); return; }
+  if (isExample){ students = []; isExample = false; }
+  setStatus([{t:"ok", m:`Leyendo ${pdfs.length} archivo(s)…`}]);
+  const notes = []; let added = 0, dup = 0;
+  const seen = new Set(students.map(s=>s.key));
+  for (const f of pdfs){
+    try {
+      const r = await readPdf(f);
+      for (const s of r.students){ if (seen.has(s.key)) { dup++; continue; } seen.add(s.key); students.push(s); added++; }
+      r.issues.forEach(m=>notes.push({t:"warn", m}));
+      if (!r.students.length && !r.issues.length) notes.push({t:"warn", m:`${f.name}: no se encontraron alumnos. ¿Es el Formato Único de Alumnos?`});
+    } catch(e){
+      notes.push({t:"bad", m:`${f.name}: no se pudo abrir (${e && e.message ? e.message : e}).`});
+    }
+  }
+  notes.unshift({t:"ok", m:`Se leyeron ${added} alumnos de ${pdfs.length} archivo(s).` + (dup?` Se omitieron ${dup} repetidos (mismo alumno en dos archivos).`:"")});
+  setStatus(notes);
+  render();
+}
+function setStatus(list){ $("#status").innerHTML = list.map(n=>`<div class="note ${n.t==="ok"?"ok":n.t==="bad"?"bad":""}">${esc(n.m)}</div>`).join(""); }
+let toastT;
+function toast(m){ const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden = true, 2600); }
+
+const drop = $("#drop");
+["dragenter","dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => { if (e.dataTransfer && e.dataTransfer.files) handleFiles(e.dataTransfer.files); });
+$("#file").addEventListener("change", e => { const fl = [...e.target.files]; e.target.value = ""; if (fl.length) handleFiles(fl); });
+$("#corte").addEventListener("change", render);
+$("#soloInscritos").addEventListener("change", render);
+try { if (window.matchMedia("(max-width: 760px)").matches) $("#ocultarVacias").checked = true; } catch(_) {}
+$("#ocultarVacias").addEventListener("change", render);
+
+/* ---------- ejemplo ficticio ---------- */
+function example(){
+  const nombresH = ["ALUMNO EJEMPLO","NIÑO DE PRUEBA"], nombresM = ["ALUMNA EJEMPLO","NIÑA DE PRUEBA"];
+  let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const h = {cct:"25DPR0000Z", escuela:"ESCUELA PRIMARIA DE EJEMPLO", turno:"MATUTINO", zona:"000", ciclo:"2026-2027"};
+  const list = [];
+  for (let g = 1; g <= 6; g++){
+    const n = 14 + Math.floor(rnd()*8);
+    for (let i = 1; i <= n; i++){
+      const sx = rnd() < .5 ? "H" : "M";
+      const baseY = 2026 - 6 - (g - 1);
+      const y = baseY - (rnd() < .03 ? 1 : 0); const m = 1 + Math.floor(rnd()*12); const d = 1 + Math.floor(rnd()*28);
+      const nac = {y: m >= 9 && rnd() < .5 ? y : y, m, d};
+      list.push(Object.assign({}, h, {grado:g, grupo:"A", no:i, nombre:(sx==="H"?nombresH:nombresM)[i%2]+" "+String(i).padStart(2,"0"),
+        curp:"—", sexo:sx, nac, estatus: (g===4 && i===3) ? "BAJA" : "INSCRITO", file:"ejemplo", key:"ej"+g+"-"+i}));
+    }
+  }
+  // Casos ficticios para mostrar la revisión
+  const a = list.find(s=>s.grado===3 && s.no===5); if (a) a.nac = {y:2020, m:3, d:14};
+  const b = list.find(s=>s.grado===5 && s.no===2); if (b) b.nac = {y:2013, m:6, d:2};
+  return list;
+}
+students = example(); isExample = true;
+setStatus([{t:"warn", m:"Estás viendo un ejemplo con alumnos ficticios. Sube tus PDF para ver tus datos."}]);
+render();
+})();
+</script>
+</body>
+</html>
