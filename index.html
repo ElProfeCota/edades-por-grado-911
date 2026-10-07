@@ -15,7 +15,7 @@
   --bg:#F7F4F5; --surface:#FFFFFF; --fg:#141012; --muted:#655A5E; --line:#E4DADD;
   --accent:#7B072A; --accent-ink:#FFFFFF; --accent-soft:#F5E6EB; --ink:#000000;
   --h:#2D5878; --h-soft:#E3ECF3; --m:#B4436B; --m-soft:#F8E6ED;
-  --warn:#8A5A00; --warn-soft:#FBF0D6; --bad:#C2331F; --bad-soft:#FBE5E0; --zero:#C5B9BD;
+  --warn:#8A5A00; --warn-soft:#FBF0D6; --bad:#C2331F; --bad-soft:#FBE5E0; --zero:#C5B9BD; --ok:#1F6B3A;
   --f-display:"Roboto Slab", Rockwell, Georgia, serif;
   --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
   --f-mono:"IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
@@ -25,12 +25,12 @@
   --bg:#141012; --surface:#1E181B; --fg:#F2ECEE; --muted:#A99CA1; --line:#352B2F;
   --accent:#D9617F; --accent-ink:#1A0A10; --accent-soft:#3A1A24; --ink:#F2ECEE;
   --h:#86B6D8; --h-soft:#1C2A35; --m:#EE91AF; --m-soft:#3A1E29;
-  --warn:#E8C26A; --warn-soft:#2E2715; --bad:#F2846F; --bad-soft:#3A1E1A; --zero:#4A3E43; color-scheme:dark}}
+  --warn:#E8C26A; --warn-soft:#2E2715; --bad:#F2846F; --bad-soft:#3A1E1A; --zero:#4A3E43; --ok:#6CCB8F; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141012; --surface:#1E181B; --fg:#F2ECEE; --muted:#A99CA1; --line:#352B2F;
   --accent:#D9617F; --accent-ink:#1A0A10; --accent-soft:#3A1A24; --ink:#F2ECEE;
   --h:#86B6D8; --h-soft:#1C2A35; --m:#EE91AF; --m-soft:#3A1E29;
-  --warn:#E8C26A; --warn-soft:#2E2715; --bad:#F2846F; --bad-soft:#3A1E1A; --zero:#4A3E43; color-scheme:dark}
+  --warn:#E8C26A; --warn-soft:#2E2715; --bad:#F2846F; --bad-soft:#3A1E1A; --zero:#4A3E43; --ok:#6CCB8F; color-scheme:dark}
 
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0}
@@ -139,6 +139,15 @@ details.group summary .chip{font-size:12px;font-weight:700;border-radius:999px;p
 .issues .who{min-width:0;overflow-wrap:anywhere}
 .issues .msg{min-width:0;color:var(--muted)}
 @media (max-width:520px){.issues li{grid-template-columns:1fr}.issues .lvl{grid-row:auto}}
+.verify{border:1px solid var(--line);border-radius:8px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.verify.ok{border-color:var(--ok)} .verify.bad{border-color:var(--bad);background:var(--bad-soft)}
+.verify summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-weight:700;list-style:none}
+.verify summary::-webkit-details-marker{display:none}
+.vpill{border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700;color:var(--accent-ink)}
+.vpill.ok{background:var(--ok)} .vpill.bad{background:var(--bad)}
+.verify ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.verify li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px}
+.verify li .mk{font-weight:700} .verify li.ok .mk{color:var(--ok)} .verify li.bad .mk{color:var(--bad)}
 .birth{display:flex;flex-direction:column;gap:12px;border-top:3px solid var(--accent);padding-top:16px}
 .birth-sum{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
 .birth-sum li{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:14px}
@@ -204,6 +213,7 @@ footer p{margin:0;max-width:80ch}
   <footer>
     <p>Sexo y fecha de nacimiento se toman de las columnas del formato. Si falta alguno, se obtiene de la CURP (posición 11 para el sexo; posiciones 5 a 10 para la fecha).</p>
     <p>La revisión compara la CURP contra las columnas de sexo, fecha y entidad de nacimiento, valida el dígito verificador, detecta CURP repetidas en dos grupos y edades fuera de lo esperado para el grado (al 1 de septiembre, en 1° lo normal es 5 o 6 años; en 2°, 6 o 7; y así sucesivamente).</p>
+    <p>La verificación automática recuenta con otro método los alumnos leídos y compara contra las tablas (no compara contra el PDF original ni detecta alumnos que falten al final de una lista). El Excel trae fórmulas que recalculan las cifras desde las hojas de cada grupo y una hoja VERIFICACIÓN que marca ✔ o ✖ contra lo que muestra la página.</p>
     <p>Revisa siempre el detalle de cada grupo antes de capturar la estadística oficial.</p>
     <p class="brands">© 2026 El Profe Cota® <span class="amp">&amp;</span> Maestros Sinaloa® · #SoyPRONI</p>
   </footer>
@@ -357,7 +367,7 @@ function birthBlock(sc){
   const grades = [...new Set(sc.groupList.map(g=>g.grado))].sort((a,b)=>a-b);
   const rows = new Map();
   for (const g of sc.groupList) for (const s of g.list){
-    if (!counted(s) || !s.sexo) continue;
+    if (!counted(s) || !s.sexo || !validDate(s.nac)) continue;
     const c = birthState(s);
     if (!rows.has(c)) rows.set(c, {c, by:{}, H:0, M:0});
     const r = rows.get(c); r.by[g.grado] = r.by[g.grado] || {H:0, M:0};
@@ -434,7 +444,7 @@ function aggregate(list){
     const gk = s.grado + "|" + s.grupo;
     if (!sc.groups.has(gk)) sc.groups.set(gk, {grado:s.grado, grupo:s.grupo, list:[], H:emptyRow(), M:emptyRow()});
     const g = sc.groups.get(gk);
-    s.edad = edad(s.nac, c);
+    s.edad = validDate(s.nac) ? edad(s.nac, c) : null;
     g.list.push(s);
     if (!counted(s) || !s.sexo) continue;
     const k = ageKey(s.edad); if (!k) continue;
@@ -449,6 +459,82 @@ function aggregate(list){
   return [...schools.values()].sort((a,b)=>a.info.cct.localeCompare(b.info.cct));
 }
 const sum = (a,b) => { const r = {}; for (const k in a) r[k] = a[k] + b[k]; return r; };
+
+/* ---------- verificador automático: recuenta con un método distinto al de las tablas ---------- */
+function ageIndep(n, c){
+  const a = c.y - n.y;
+  return new Date(c.y, n.m-1, n.d) > new Date(c.y, c.m-1, c.d) ? a - 1 : a;
+}
+function recount(g){
+  const c = corteDate(), solo = $("#soloInscritos").checked;
+  const out = {H:{total:0}, M:{total:0}};
+  AGE_COLS.forEach(a => { out.H[a.k] = 0; out.M[a.k] = 0; });
+  for (const s of g.list){
+    if (solo && (s.estatus||"").toUpperCase().indexOf("BAJA") >= 0) continue;
+    if ((s.sexo !== "H" && s.sexo !== "M") || !validDate(s.nac)) continue;
+    const a = ageIndep(s.nac, c);
+    const k = a < 6 ? "lt6" : a > 15 ? "gt15" : String(a);
+    out[s.sexo][k]++; out[s.sexo].total++;
+  }
+  return out;
+}
+function verifySchool(sc){
+  const checks = [], R = new Map();
+  const add = (ok, title, detail) => checks.push({ok, title, detail: detail || ""});
+  const T = sum(sc.H, sc.M), solo = $("#soloInscritos").checked;
+  // 1. La lista de cada grupo no tiene saltos (si falta un número, quizá un alumno no se leyó del PDF)
+  const lis = [];
+  for (const g of sc.groupList){
+    const nos = g.list.map(s=>s.no).sort((a,b)=>a-b), miss = [], dup = []; let exp = 1;
+    for (const n of nos){ if (n < exp){ dup.push(n); continue; } for (; exp < n; exp++) miss.push(exp); exp = n + 1; }
+    if (miss.length) lis.push(`${g.grado}° ${g.grupo}: falta el No. ${miss.join(", ")}`);
+    if (dup.length) lis.push(`${g.grado}° ${g.grupo}: No. repetido ${dup.join(", ")}`);
+  }
+  const porGrupo = "Alumnos leídos por grupo: " + sc.groupList.map(g=>`${g.grado}° ${g.grupo}: ${g.list.length}`).join(" · ") + ". Compáralos con el total de cada lista en la plataforma: esta comprobación no detecta si falta el último alumno de una lista.";
+  add(!lis.length, "Numeración de la lista sin saltos (no detecta alumnos faltantes al final)", (lis.length ? lis.join(" · ") + ". Puede que un alumno no se haya leído del PDF. " : "") + porGrupo);
+  // 2. Recuento independiente de hombres y mujeres por edad en cada grupo
+  const bad = []; const tot = {H:0, M:0};
+  for (const g of sc.groupList){
+    const r = recount(g); R.set(g, r);
+    for (const sx of ["H","M"]){
+      tot[sx] += r[sx].total;
+      for (const a of AGE_COLS) if (r[sx][a.k] !== g[sx][a.k]) bad.push(`${g.grado}° ${g.grupo} ${sx} ${a.label}: tabla ${g[sx][a.k]}, recuento ${r[sx][a.k]}`);
+      if (r[sx].total !== g[sx].total) bad.push(`${g.grado}° ${g.grupo} ${sx} total: tabla ${g[sx].total}, recuento ${r[sx].total}`);
+      const inv = g.list.filter(s=>s.sexo===sx && !validDate(s.nac)).map(s=>`No. ${s.no}`);
+      if (inv.length && r[sx].total !== g[sx].total) bad.push(`revisa la fecha de nacimiento de ${g.grado}° ${g.grupo} ${inv.join(", ")}`);
+    }
+  }
+  add(!bad.length, "Recuento independiente: hombres y mujeres por edad en cada grupo coinciden con las tablas", bad.slice(0,6).join(" · "));
+  // 3. Sumas
+  const sums = [];
+  for (const sx of ["H","M"]){
+    const byAge = AGE_COLS.reduce((n,a)=>n+sc[sx][a.k],0);
+    if (byAge !== sc[sx].total) sums.push(`${sx}: las edades suman ${byAge} y el total dice ${sc[sx].total}`);
+    if (tot[sx] !== sc[sx].total) sums.push(`${sx}: los grupos suman ${tot[sx]} y la escuela dice ${sc[sx].total}`);
+  }
+  if (T.total !== sc.H.total + sc.M.total) sums.push("El total no es hombres + mujeres");
+  add(!sums.length, "Sumas: las edades suman el total y los grupos suman la escuela", sums.join(" · "));
+  // 4. Todos los alumnos leídos quedan contados o explicados
+  let leidos = 0, baja = 0, sinDato = 0;
+  for (const g of sc.groupList) for (const s of g.list){
+    leidos++;
+    if (solo && /BAJA/i.test(s.estatus||"")) baja++;
+    else if ((s.sexo !== "H" && s.sexo !== "M") || !validDate(s.nac)) sinDato++;
+  }
+  add(leidos === T.total + baja + sinDato, "Cuadre de alumnos: todos los leídos están contados o explicados",
+      `${leidos} leídos = ${T.total} contados + ${baja} de baja + ${sinDato} sin sexo o fecha válida`);
+  // 5. Lugar de nacimiento suma lo mismo que el total contado
+  const B = sc.birth, bt = B ? B.list.reduce((n,r)=>n+r.H+r.M,0) : 0;
+  add(bt === T.total, "Lugar de nacimiento: la tabla suma el mismo total de alumnos", bt === T.total ? "" : `la tabla suma ${bt} y el total contado es ${T.total}`);
+  const passed = checks.filter(c=>c.ok).length;
+  return {checks, passed, R};
+}
+function verifyBlock(v){
+  const ok = v.passed === v.checks.length;
+  return `<details class="verify ${ok?"ok":"bad"}"${ok?"":" open"}><summary><span class="vpill ${ok?"ok":"bad"}">${ok?"✔":"✖"} Verificación automática</span><span>${v.passed} de ${v.checks.length} comprobaciones correctas</span></summary>
+    <p class="muted" style="margin:0;font-size:14px">La página vuelve a contar a cada alumno con otro método y compara contra las tablas que ves aquí.</p>
+    <ul>${v.checks.map(c=>`<li class="${c.ok?"ok":"bad"}"><span class="mk">${c.ok?"✔":"✖"}</span><span><b>${esc(c.title)}</b>${c.detail?`<br><span class="muted">${esc(c.detail)}</span>`:""}</span></li>`).join("")}</ul></details>`;
+}
 
 /* ---------- render ---------- */
 let COLS = AGE_COLS;
@@ -482,6 +568,8 @@ function render(){
   for (const sc of schools){
     const i = sc.info, T = sum(sc.H, sc.M);
     COLS = $("#ocultarVacias").checked ? AGE_COLS.filter(c => T[c.k] > 0) : AGE_COLS;
+    const birthHtml = birthBlock(sc);
+    sc.ver = verifySchool(sc);
     html += `<article class="school">
       <div class="school-head">
         <div style="display:flex;flex-direction:column;gap:6px">
@@ -491,6 +579,7 @@ function render(){
         <div class="totals"><div class="tot"><span>Alumnos</span><strong>${T.total}</strong></div><div class="tot h"><span>Hombres</span><strong>${sc.H.total}</strong></div><div class="tot m"><span>Mujeres</span><strong>${sc.M.total}</strong></div></div>
       </div>
       ${reviewBlock(sc)}
+      ${verifyBlock(sc.ver)}
       <div class="tablebox"><table>
         <thead><tr><th style="text-align:left">Grupo</th><th style="text-align:left">Sexo</th>${COLS.map(c=>`<th>${c.label}</th>`).join("")}<th>Total</th></tr></thead><tbody>`;
     for (const g of sc.groupList){
@@ -510,7 +599,7 @@ function render(){
           return `<tr class="${counted(s)?"":"out"} ${lv?"flag-"+lv:""}"><td class="c mono">${s.no}</td><td>${esc(s.nombre)}</td><td class="mono">${esc(s.curp)}</td><td class="c">${s.sexo||"?"}</td><td class="c mono">${fmtNac(s.nac)}</td><td class="c mono"><b>${s.edad==null?"?":s.edad}</b></td><td>${esc(s.estatus||"")}</td><td>${lv?`<span class="chip ${lv}">${lv==="e"?"Error":"Aviso"}</span>`:'<span class="muted">OK</span>'}</td></tr>`;}).join("")}
         </tbody></table></div></details>`;
     }
-    html += `</div>${birthBlock(sc)}</article>`;
+    html += `</div>${birthHtml}</article>`;
   }
   res.innerHTML = html;
   $("#copyBtn").onclick = () => copyTable(schools);
@@ -545,27 +634,161 @@ async function copyTable(schools){
     ta.remove();
   }
 }
+const serial = n => (Date.UTC(n.y, n.m-1, n.d) - Date.UTC(1899,11,30)) / 86400000;
+const qs = name => "'" + name.replace(/'/g,"''") + "'";
+const curpState = s => (s.curp && s.curp !== "—" && s.curp.length >= 13) ? s.curp.slice(11,13) : "";
 function buildWorkbook(schools){
-  const c = corteDate();
+  const c = corteDate(), solo = $("#soloInscritos").checked;
+  const enc = XLSX.utils.encode_cell, colL = XLSX.utils.encode_col;
   const wb = XLSX.utils.book_new();
+  const multi = schools.length > 1;
+  const used = new Set(["CONCENTRADO","VERIFICACIÓN","INCONSISTENCIAS","LUGAR DE NACIMIENTO"]);
+  for (const sc of schools) for (const g of sc.groupList){
+    let name = (multi ? sc.info.cct.slice(-5)+" " : "") + g.grado + "° " + g.grupo;
+    name = name.replace(/[\\\/\?\*\[\]:]/g,"").slice(0,31); let n = name, k = 2;
+    while (used.has(n)) n = (name.slice(0,28)+" "+k++);
+    used.add(n); g.sheet = n;
+  }
+  const rng = (g, col) => `${qs(g.sheet)}!$${col}$2:$${col}$${g.list.length+1}`;
+  const crit = k => k === "lt6" ? '"<6"' : k === "gt15" ? '">15"' : k;
+  const cnt = (g, sx, extra) => `COUNTIFS(${rng(g,"D")},"${sx}",${rng(g,"H")},"SÍ"${extra||""})`;
+  const A0 = 6, TC = A0 + AGE_COLS.length;   // primera columna de edades y columna TOTAL (base 0)
+
+  /* ---- CONCENTRADO: celdas con fórmulas que cuentan desde las hojas de cada grupo ---- */
   const conc = concentradoRows(schools);
-  conc.unshift([], ["Fecha de corte:", `${String(c.d).padStart(2,"0")}/${String(c.m).padStart(2,"0")}/${c.y}`]);
-  conc.unshift(["ESTADÍSTICA DE EDADES POR GRADO Y GRUPO"]);
+  conc.unshift([], ["Fecha de corte:", ""]);
+  conc.unshift(["ESTADÍSTICA DE EDADES POR GRADO Y GRUPO · se calcula con fórmulas desde las hojas de cada grupo"]);
   const ws = XLSX.utils.aoa_to_sheet(conc);
-  ws["!cols"] = [{wch:12},{wch:28},{wch:11},{wch:9},{wch:7},{wch:10}].concat(AGE_COLS.map(()=>({wch:10})),[{wch:8}]);
-  XLSX.utils.book_append_sheet(wb, ws, "CONCENTRADO");
-  const multi = schools.length > 1; const used = new Set(["CONCENTRADO"]);
+  ws["B3"] = {t:"n", v:serial(c), z:"dd/mm/yyyy"};
+  ws["C3"] = {t:"s", v:"Solo inscritos:"}; ws["D3"] = {t:"s", v: solo ? "SÍ" : "NO"};
+  const cellN = (r0, c0, v, f) => { ws[enc({r:r0, c:c0})] = {t:"n", v, f}; };
+  let r = 5; const rowOf = new Map(), schoolRows = new Map();
   for (const sc of schools){
     for (const g of sc.groupList){
-      let name = (multi ? sc.info.cct.slice(-5)+" " : "") + g.grado + "° " + g.grupo;
-      name = name.replace(/[\\\/\?\*\[\]:]/g,"").slice(0,31); let n = name, k = 2; while (used.has(n)) n = (name.slice(0,28)+" "+k++); used.add(n);
-      const rows = [["NO.","CURP","NOMBRE","SEXO","FECHA DE NACIMIENTO","EDAD AL CORTE","ESTATUS","CONTADO"]].concat(
-        g.list.map(s=>[s.no, s.curp, s.nombre, s.sexo, fmtNac(s.nac), s.edad, s.estatus||"", counted(s)?"SÍ":"NO"]));
-      const sh = XLSX.utils.aoa_to_sheet(rows);
-      sh["!cols"] = [{wch:5},{wch:20},{wch:40},{wch:6},{wch:12},{wch:8},{wch:12},{wch:9}];
-      XLSX.utils.book_append_sheet(wb, sh, n);
+      rowOf.set(g, r);
+      for (const [sx, off] of [["H",0],["M",1]]){
+        AGE_COLS.forEach((a,j)=> cellN(r-1+off, A0+j, g[sx][a.k], cnt(g, sx, `,${rng(g,"F")},${crit(a.k)}`)));
+        cellN(r-1+off, TC, g[sx].total, `SUM(${colL(A0)}${r+off}:${colL(TC-1)}${r+off})`);
+      }
+      for (let j=0; j<=AGE_COLS.length; j++){
+        const col = colL(A0+j), k = AGE_COLS[j] && AGE_COLS[j].k;
+        cellN(r+1, A0+j, k ? g.H[k]+g.M[k] : g.H.total+g.M.total, `${col}${r}+${col}${r+1}`);
+      }
+      r += 3;
+    }
+    schoolRows.set(sc, r);
+    const ids = sc.groupList.map(g=>rowOf.get(g));
+    for (const [sx, off] of [["H",0],["M",1]])
+      for (let j=0; j<=AGE_COLS.length; j++){
+        const col = colL(A0+j), k = AGE_COLS[j] && AGE_COLS[j].k;
+        cellN(r-1+off, A0+j, k ? sc[sx][k] : sc[sx].total, ids.map(x=>`${col}${x+off}`).join("+"));
+      }
+    for (let j=0; j<=AGE_COLS.length; j++){
+      const col = colL(A0+j), k = AGE_COLS[j] && AGE_COLS[j].k;
+      cellN(r+1, A0+j, k ? sc.H[k]+sc.M[k] : sc.H.total+sc.M.total, `${col}${r}+${col}${r+1}`);
+    }
+    r += 3;
+  }
+  ws["!cols"] = [{wch:12},{wch:28},{wch:15},{wch:9},{wch:7},{wch:10}].concat(AGE_COLS.map(()=>({wch:10})),[{wch:8}]);
+
+  /* ---- Hojas de grupo: fecha real, edad y "contado" con fórmulas ---- */
+  const groupSheets = [];
+  for (const sc of schools) for (const g of sc.groupList){
+    const HEAD = ["NO.","CURP","NOMBRE","SEXO","FECHA DE NACIMIENTO","EDAD AL CORTE (fórmula)","ESTATUS","CONTADO (fórmula)","CLAVE ESTADO EN CURP (fórmula)"];
+    const sh = XLSX.utils.aoa_to_sheet([HEAD]);
+    g.list.forEach((s,i)=>{
+      const rr = i+1, x = rr+1;
+      sh[enc({r:rr,c:0})] = {t:"n", v:s.no};
+      sh[enc({r:rr,c:1})] = {t:"s", v:s.curp||""};
+      sh[enc({r:rr,c:2})] = {t:"s", v:s.nombre};
+      sh[enc({r:rr,c:3})] = {t:"s", v:s.sexo||""};
+      sh[enc({r:rr,c:4})] = validDate(s.nac) ? {t:"n", v:serial(s.nac), z:"dd/mm/yyyy"} : {t:"s", v:""};
+      const fe = `IF(ISNUMBER(E${x}),IF(E${x}>CONCENTRADO!$B$3,-1,DATEDIF(E${x},CONCENTRADO!$B$3,"Y")),"")`;
+      sh[enc({r:rr,c:5})] = s.edad == null ? {t:"s", v:"", f:fe} : {t:"n", v:s.edad, f:fe};
+      sh[enc({r:rr,c:6})] = {t:"s", v:s.estatus||""};
+      sh[enc({r:rr,c:7})] = {t:"s", v:counted(s)?"SÍ":"NO", f:`IF(AND(CONCENTRADO!$D$3="SÍ",ISNUMBER(SEARCH("BAJA",G${x}))),"NO","SÍ")`};
+      sh[enc({r:rr,c:8})] = {t:"s", v:curpState(s), f:`IF(LEN(B${x})>=13,MID(B${x},12,2),"")`};
+    });
+    sh["!ref"] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:g.list.length, c:8}});
+    sh["!cols"] = [{wch:5},{wch:20},{wch:40},{wch:6},{wch:14},{wch:12},{wch:12},{wch:10},{wch:14}];
+    groupSheets.push([g.sheet, sh]);
+  }
+
+  /* ---- VERIFICACIÓN: recuento con fórmulas contra lo que muestra la página ---- */
+  const vs = {}; let maxC = 0, allOk = true;
+  const put = (r0, c0, cell) => { vs[enc({r:r0-1, c:c0})] = cell; if (c0 > maxC) maxC = c0; };
+  const txt = (r0, c0, t) => put(r0, c0, {t:"s", v:t});
+  const mark = (r0, c0, ok, f) => { if (!ok) allOk = false; put(r0, c0, {t:"s", v: ok ? "✔" : "✖", f}); };
+  txt(1,0,"VERIFICACIÓN CON FÓRMULAS");
+  txt(2,0,"Esta hoja no compara contra el PDF original: cada ✔ indica que Excel, contando con fórmulas desde las hojas de cada grupo, obtiene el mismo número que muestra la página. Si cambias la fecha de corte (CONCENTRADO, celda B3), la opción «Solo inscritos» (CONCENTRADO, celda D3) o editas datos en las hojas de grupo, los resultados se recalculan y pueden dejar de coincidir con la página.");
+  txt(3,0,"RESULTADO GENERAL");
+  let row = 5; const TP = 2 + AGE_COLS.length;
+  for (const sc of schools){
+    const ver = sc.ver, i = sc.info, sr = schoolRows.get(sc);
+    txt(row,0,`${i.cct} · ${i.escuela} · ${i.turno}`); row++;
+    ["Grupo","Sexo"].concat(AGE_COLS.map(a=>a.label), ["Total página","Total Excel","Estado"]).forEach((h,j)=>txt(row,j,h)); row++;
+    for (const g of sc.groupList){
+      const R = ver.R.get(g), cr = rowOf.get(g);
+      for (const [sx, off] of [["H",0],["M",1]]){
+        txt(row,0,`${g.grado}° ${g.grupo}`); txt(row,1,sx);
+        AGE_COLS.forEach((a,j)=> mark(row, 2+j, R[sx][a.k] === g[sx][a.k], `IF(CONCENTRADO!${colL(A0+j)}${cr+off}=${g[sx][a.k]},"✔","✖")`));
+        put(row, TP, {t:"n", v:g[sx].total});
+        put(row, TP+1, {t:"n", v:R[sx].total, f:cnt(g, sx, `,${rng(g,"F")},">=-1"`)});
+        mark(row, TP+2, R[sx].total === g[sx].total, `IF(${colL(TP)}${row}=${colL(TP+1)}${row},"✔","✖")`);
+        row++;
+      }
+    }
+    for (const [sx, off] of [["H",0],["M",1]]){
+      txt(row,0,"ESCUELA"); txt(row,1,sx);
+      AGE_COLS.forEach((a,j)=> mark(row, 2+j, sc.groupList.reduce((n,g)=>n+ver.R.get(g)[sx][a.k],0) === sc[sx][a.k], `IF(CONCENTRADO!${colL(A0+j)}${sr+off}=${sc[sx][a.k]},"✔","✖")`));
+      const tot = sc.groupList.reduce((n,g)=>n+ver.R.get(g)[sx].total,0);
+      put(row, TP, {t:"n", v:sc[sx].total});
+      put(row, TP+1, {t:"n", v:tot, f:sc.groupList.map(g=>cnt(g, sx, `,${rng(g,"F")},">=-1"`)).join("+")});
+      mark(row, TP+2, tot === sc[sx].total, `IF(${colL(TP)}${row}=${colL(TP+1)}${row},"✔","✖")`);
+      row++;
+    }
+    row++;
+    txt(row,0,"Numeración de la lista (sin saltos ni repetidos)"); row++;
+    ["Grupo","","En lista (página)","En lista (Excel)","Último No.","Estado"].forEach((h,j)=>{ if (h) txt(row,j,h); }); row++;
+    for (const g of sc.groupList){
+      const nos = g.list.map(s=>s.no);
+      txt(row,0,`${g.grado}° ${g.grupo}`);
+      put(row,2,{t:"n", v:g.list.length});
+      put(row,3,{t:"n", v:g.list.length, f:`COUNTA(${rng(g,"C")})`});
+      put(row,4,{t:"n", v:Math.max(...nos), f:`MAX(${rng(g,"A")})`});
+      mark(row,5, Math.max(...nos) === nos.length, `IF(AND(C${row}=D${row},E${row}=COUNT(${rng(g,"A")})),"✔","✖")`);
+      row++;
+    }
+    row++;
+    const B = sc.birth;
+    const cs = sc.groupList.flatMap(g=>g.list).filter(s=>counted(s) && s.sexo && validDate(s.nac));
+    if (B && B.list.length){
+      txt(row,0,"Lugar de nacimiento (clave del estado en las posiciones 12 y 13 de la CURP)"); row++;
+      if (cs.length && cs.filter(s=>curpState(s)).length / cs.length >= 0.5){
+        ["Estado","Clave","H página","H Excel","M página","M Excel","Estado"].forEach((h,j)=>txt(row,j,h)); row++;
+        for (const e of B.list){
+          if (!/^[A-Z]{2}$/.test(e.c) || !ESTADOS[e.c]) continue;
+          const exH = cs.filter(s=>s.sexo==="H" && curpState(s)===e.c).length, exM = cs.filter(s=>s.sexo==="M" && curpState(s)===e.c).length;
+          const fx = sx => sc.groupList.map(g=>`COUNTIFS(${rng(g,"I")},"${e.c}",${rng(g,"D")},"${sx}",${rng(g,"H")},"SÍ",${rng(g,"F")},">=-1")`).join("+");
+          txt(row,0,estadoNombre(e.c)); txt(row,1,e.c);
+          put(row,2,{t:"n", v:e.H}); put(row,3,{t:"n", v:exH, f:fx("H")});
+          put(row,4,{t:"n", v:e.M}); put(row,5,{t:"n", v:exM, f:fx("M")});
+          mark(row,6, exH===e.H && exM===e.M, `IF(AND(C${row}=D${row},E${row}=F${row}),"✔","✖")`);
+          row++;
+        }
+        txt(row,0,"Si aparece ✖ en un estado, algún alumno no trae la clave del estado en su CURP y la página la tomó de la columna Entidad de nacimiento."); row++;
+      } else { txt(row,0,"No verificable con fórmulas: la mayoría de los alumnos no tiene una CURP con clave de estado."); row++; }
+      row++;
     }
   }
+  put(3,1,{t:"s", v: allOk ? "✔ TODO COINCIDE CON LA PÁGINA" : "✖ HAY DIFERENCIAS: revisa las celdas con ✖",
+    f:`IF(COUNTIF(A5:Z${row+5},"✖")=0,"✔ TODO COINCIDE CON LA PÁGINA","✖ HAY DIFERENCIAS: revisa las celdas con ✖")`});
+  vs["!ref"] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:row, c:maxC}});
+  vs["!cols"] = [{wch:24},{wch:7}].concat(AGE_COLS.map(()=>({wch:11})), [{wch:13},{wch:12},{wch:9}]);
+
+  XLSX.utils.book_append_sheet(wb, ws, "CONCENTRADO");
+  XLSX.utils.book_append_sheet(wb, vs, "VERIFICACIÓN");
+  for (const [n, sh] of groupSheets) XLSX.utils.book_append_sheet(wb, sh, n);
   const inc = [["NIVEL","CCT","GRADO","GRUPO","NO.","NOMBRE","CURP","DETALLE"]];
   for (const sc of schools) for (const g of sc.groupList) for (const s of g.list) for (const i of s.issues)
     inc.push([i.lvl==="error"?"ERROR":"AVISO", sc.info.cct, g.grado+"°", g.grupo, s.no, s.nombre, s.curp, i.msg]);
